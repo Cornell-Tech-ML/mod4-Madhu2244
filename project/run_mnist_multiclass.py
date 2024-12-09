@@ -41,8 +41,9 @@ class Conv2d(minitorch.Module):
         self.bias = RParam(out_channels, 1, 1)
 
     def forward(self, input):
+        return minitorch.conv2d(input, self.weights.value) + self.bias.value
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # raise NotImplementedError("Need to implement for Task 4.5")
 
 
 class Network(minitorch.Module):
@@ -67,12 +68,38 @@ class Network(minitorch.Module):
         self.mid = None
         self.out = None
 
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        self.conv1 = Conv2d(1, 4, 3, 3)
+        self.conv2 = Conv2d(4, 8, 3, 3)
+
+        self.fc1 = Linear(392, 64)
+        self.fc2 = Linear(64, C)
+
+        # # TODO: Implement for Task 4.5.
+        # raise NotImplementedError("Need to implement for Task 4.5")
 
     def forward(self, x):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Step 1 & 2: Apply convolutions with ReLU activation, save intermediate results.
+        self.mid = self.conv1(x).relu()
+        self.out = self.conv2(self.mid).relu()
+
+        # Step 3: Apply 2D max pooling with a 4x4 kernel.
+        x = self.out.max_pool2d(kernel_size=4, stride=4)  # Use avg_pool2d if needed.
+
+        # Step 4: Flatten the output.
+        x = x.view(x.shape[0], -1)  # Flatten to size (BATCH, 392).
+
+        # Step 5: Apply a Linear layer with ReLU and Dropout.
+        x = self.fc1(x).relu().dropout(rate=0.25)
+
+        # Step 6: Apply the final Linear layer.
+        x = self.fc2(x)
+
+        # Step 7: Apply log softmax over the class dimension.
+        x = x.log_softmax(dim=1)
+
+        return x
+        # # TODO: Implement for Task 4.5.
+        # raise NotImplementedError("Need to implement for Task 4.5")
 
 
 def make_mnist(start, stop):
