@@ -402,8 +402,9 @@ class Tensor:
         """
         if dim is None:
             return self.sum() / self.size
-        denom = int(self.shape[int(self._ensure_tensor(dim).item())])
-        return self.sum(dim) / denom
+        dim_idx = int(self._ensure_tensor(dim).item())
+        denom = int(self.shape[dim_idx])
+        return self.sum(dim_idx) / denom
 
     def zero_grad_(self) -> None:
         """Make gradient zero"""
