@@ -31,8 +31,11 @@ def test_avg(t: Tensor) -> None:
 @pytest.mark.task4_4
 @given(tensors(shape=(2, 3, 4)))
 def test_max(t: Tensor) -> None:
-    # TODO: Implement for Task 4.4.
-    raise NotImplementedError("Need to implement for Task 4.4")
+    # Test along dimension 0
+    q = minitorch.nn.max(t, 0)
+    x = minitorch.nn.max(t, dim=0)
+    for i in q._tensor.indices():
+        assert_close(q[i], x[i])
 
 
 @pytest.mark.task4_4
