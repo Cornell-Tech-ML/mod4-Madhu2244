@@ -4,16 +4,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 
 class Module:
-    """Modules form a tree that store parameters and other
-    submodules. They make up the basis of neural network stacks.
-
-    Attributes
-    ----------
-        _modules : Storage of the child modules
-        _parameters : Storage of the module's parameters
-        training : Whether the module is in training mode or evaluation mode
-
-    """
+    """Modules form a tree that store parameters and other submodules. They make up the basis of neural network stacks."""
 
     _modules: Dict[str, Module]
     _parameters: Dict[str, Parameter]
@@ -30,26 +21,34 @@ class Module:
         return list(m.values())
 
     def train(self) -> None:
-        """Set the mode of this module and all descendent modules to `train`."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        """Set the `training` flag of this and descendent to true."""
+        self.training = True
+        for module in self.modules():
+            module.train()
 
     def eval(self) -> None:
-        """Set the mode of this module and all descendent modules to `eval`."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        """Set the `training` flag of this and descendent to false."""
+        self.training = False
+        for module in self.modules():
+            module.eval()
 
-    def named_parameters(self) -> Sequence[Tuple[str, Parameter]]:
-        """Collect all the parameters of this module and its descendents.
-
-        Returns
-        -------
-            The name and `Parameter` of each ancestor parameter.
-
-        """
-        raise NotImplementedError("Need to include this file from past assignment.")
+    def named_parameters(self, prefix: str = "") -> Sequence[Tuple[str, Parameter]]:
+        """Collect all the parameters of this module and its descendents."""
+        results = []
+        for key, value in self._parameters.items():
+            results.append((prefix + key, value))
+        for key, value in self._modules.items():
+            results += value.named_parameters(prefix + key + ".")
+        return results
 
     def parameters(self) -> Sequence[Parameter]:
         """Enumerate over all the parameters of this module and its descendents."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        results = []
+        for value in self._parameters.values():
+            results.append(value)
+        for value in self.modules():
+            results += value.parameters()
+        return results
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
         """Manually add a parameter. Useful helper for scalar parameters.
@@ -69,6 +68,7 @@ class Module:
         return val
 
     def __setattr__(self, key: str, val: Parameter) -> None:
+        """Set the attribute of the module."""
         if isinstance(val, Parameter):
             self.__dict__["_parameters"][key] = val
         elif isinstance(val, Module):
@@ -77,6 +77,7 @@ class Module:
             super().__setattr__(key, val)
 
     def __getattr__(self, key: str) -> Any:
+        """Get the attribute of the module."""
         if key in self.__dict__["_parameters"]:
             return self.__dict__["_parameters"][key]
 
@@ -85,9 +86,12 @@ class Module:
         return None
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Call the module."""
         return self.forward(*args, **kwargs)
 
     def __repr__(self) -> str:
+        """Return the representation of the module."""
+
         def _addindent(s_: str, numSpaces: int) -> str:
             s2 = s_.split("\n")
             if len(s2) == 1:
@@ -123,6 +127,7 @@ class Parameter:
     """
 
     def __init__(self, x: Any, name: Optional[str] = None) -> None:
+        """Initialize the parameter."""
         self.value = x
         self.name = name
         if hasattr(x, "requires_grad_"):
@@ -139,7 +144,9 @@ class Parameter:
                 self.value.name = self.name
 
     def __repr__(self) -> str:
+        """Return the representation of the parameter."""
         return repr(self.value)
 
     def __str__(self) -> str:
+        """Return the string representation of the parameter."""
         return str(self.value)

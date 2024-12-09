@@ -34,8 +34,7 @@ class Conv1d(minitorch.Module):
         self.bias = RParam(1, out_channels, 1)
 
     def forward(self, input):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.Conv1dFun.apply(input, self.weights.value) + self.bias.value
 
 
 class CNNSentimentKim(minitorch.Module):
@@ -61,15 +60,40 @@ class CNNSentimentKim(minitorch.Module):
     ):
         super().__init__()
         self.feature_map_size = feature_map_size
+        self.dropout = dropout
+        self.convs = []
+        for i in filter_sizes:
+            self.convs.append(Conv1d(embedding_size, feature_map_size, i))
+        self.linear = Linear(feature_map_size, 1)
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # raise NotImplementedError("Need to implement for Task 4.5")
 
     def forward(self, embeddings):
         """
         embeddings tensor: [batch x sentence length x embedding dim]
         """
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Transpose embeddings to match Conv1D input format: [batch, embedding dim, sentence length]
+        x = embeddings.permute(0, 2, 1)
+
+        # Step 1: Apply 1D convolutions followed by ReLU activation
+        conv_outs = [conv.forward(x).relu() for conv in self.convs]
+
+        # Step 2: Apply max-over-time pooling across the time dimension
+        pooled = [conv.max(dim=2).view(embeddings.shape[0], self.feature_map_size) for conv in conv_outs]
+
+        # Step 3: Concatenate or aggregate pooled outputs from all filters
+        total = sum(pooled)  # Aggregate by summing feature maps
+
+        # Step 4: Apply a fully connected linear layer with ReLU activation
+        t = self.linear(total).relu()
+
+        # Step 5: Apply dropout for regularization
+        t = minitorch.dropout(t, self.dropout)
+
+        # Step 6: Apply sigmoid activation for final classification output
+        return t.sigmoid()
+        # # TODO: Implement for Task 4.5.
+        # raise NotImplementedError("Need to implement for Task 4.5")
 
 
 # Evaluation helper methods
